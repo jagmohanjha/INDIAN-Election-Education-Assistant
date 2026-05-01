@@ -1,5 +1,13 @@
 import { initializeApp, getApps, getApp, type FirebaseOptions } from 'firebase/app';
-import { getAuth, signInWithEmailAndPassword, signOut as firebaseSignOut, type UserCredential } from 'firebase/auth';
+import {
+  getAuth,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signInWithPopup,
+  signOut as firebaseSignOut,
+  GoogleAuthProvider,
+  type UserCredential,
+} from 'firebase/auth';
 
 const firebaseConfig: FirebaseOptions = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || '',
@@ -27,6 +35,22 @@ export const signInUser = async (email: string, password: string): Promise<UserC
     throw new Error('Firebase is not configured. Please add your Firebase settings to environment variables.');
   }
   return signInWithEmailAndPassword(auth, email, password);
+};
+
+export const registerUser = async (email: string, password: string): Promise<UserCredential> => {
+  if (!auth) {
+    throw new Error('Firebase is not configured. Please add your Firebase settings to environment variables.');
+  }
+  return createUserWithEmailAndPassword(auth, email, password);
+};
+
+const googleProvider = new GoogleAuthProvider();
+
+export const signInWithGooglePopup = async (): Promise<UserCredential> => {
+  if (!auth) {
+    throw new Error('Firebase is not configured. Please add your Firebase settings to environment variables.');
+  }
+  return signInWithPopup(auth, googleProvider);
 };
 
 export const logoutUser = async () => {

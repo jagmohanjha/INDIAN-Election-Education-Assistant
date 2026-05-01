@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { getElectionTimeline } from '../utils/electionLogic';
 import { FiCalendar, FiAlertCircle, FiCheckCircle, FiClock } from 'react-icons/fi';
 
 const Timeline: React.FC = () => {
-  const timeline = getElectionTimeline();
+  const timeline = useMemo(() => getElectionTimeline(), []);
 
   const getStatusIcon = (status: string) => {
     switch (status) {

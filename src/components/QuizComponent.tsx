@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { getQuizQuestions } from '../utils/electionLogic';
 import { FiRotateCcw } from 'react-icons/fi';
 
 const QuizComponent: React.FC = () => {
-  const questions = getQuizQuestions();
+  const questions = useMemo(() => getQuizQuestions(), []);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<number[]>(Array(questions.length).fill(-1));
   const [showResults, setShowResults] = useState(false);
@@ -32,24 +32,26 @@ const QuizComponent: React.FC = () => {
     setShowResults(true);
   };
 
-  const calculateScore = () => {
-    let score = 0;
-    selectedAnswers.forEach((answer, idx) => {
-      if (answer === questions[idx].correctAnswer) {
-        score++;
-      }
-    });
-    return score;
-  };
-
   const handleResetQuiz = () => {
     setSelectedAnswers(Array(questions.length).fill(-1));
     setShowResults(false);
     setCurrentQuestion(0);
   };
 
-  const score = calculateScore();
-  const percentage = Math.round((score / questions.length) * 100);
+  const score = useMemo(() => {
+    let computedScore = 0;
+    selectedAnswers.forEach((answer, idx) => {
+      if (answer === questions[idx].correctAnswer) {
+        computedScore++;
+      }
+    });
+    return computedScore;
+  }, [questions, selectedAnswers]);
+
+  const percentage = useMemo(
+    () => Math.round((score / questions.length) * 100),
+    [score, questions.length],
+  );
 
   const question = questions[currentQuestion];
 

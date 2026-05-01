@@ -1,7 +1,7 @@
 import React, { Suspense, useState, lazy } from 'react';
 import { FiHome, FiCheckCircle, FiFileText, FiCheckSquare, FiBook, FiHelpCircle, FiCalendar, FiMenu, FiX, FiLogOut, FiLogIn } from 'react-icons/fi';
 import './App.css';
-import { isFirebaseConfigured, signInUser, logoutUser } from './auth';
+import { isFirebaseConfigured, signInUser, registerUser, signInWithGooglePopup, logoutUser } from './auth';
 
 const EligibilityChecker = lazy(() => import('./components/EligibilityChecker'));
 const RegistrationGuide = lazy(() => import('./components/RegistrationGuide'));
@@ -29,8 +29,26 @@ function App() {
     return savedUser ? JSON.parse(savedUser) : null;
   });
   const [loginForm, setLoginForm] = useState({ email: '', password: '' });
+  const [registerForm, setRegisterForm] = useState({ email: '', password: '', confirmPassword: '' });
+  const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
   const [loginError, setLoginError] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
+
+  const getLocalAccounts = () => {
+    const stored = localStorage.getItem('local-user-accounts');
+    if (!stored) return [] as Array<{ email: string; password: string }>;
+    try {
+      return JSON.parse(stored) as Array<{ email: string; password: string }>;
+    } catch {
+      return [] as Array<{ email: string; password: string }>;
+    }
+  };
+
+  const saveLocalAccount = (account: { email: string; password: string }) => {
+    const accounts = getLocalAccounts();
+    accounts.push(account);
+    localStorage.setItem('local-user-accounts', JSON.stringify(accounts));
+  };
 
   const handleLoginSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -53,19 +71,93 @@ function App() {
         setLoggedInUser(user);
         localStorage.setItem('election-app-user', JSON.stringify(user));
       } else {
-        const validEmail = 'user@example.com';
-        const validPassword = 'vote1234';
+        const accounts = getLocalAccounts();
+        const localUser = accounts.find(
+          (account) => account.email.toLowerCase() === email.toLowerCase() && account.password === password,
+        );
 
-        if (email === validEmail && password === validPassword) {
+        if (localUser) {
           const user = { name: 'Election Voter', email };
           setLoggedInUser(user);
           localStorage.setItem('election-app-user', JSON.stringify(user));
         } else {
-          setLoginError('Invalid credentials. Use user@example.com / vote1234');
+          const validEmail = 'user@example.com';
+          const validPassword = 'vote1234';
+
+          if (email === validEmail && password === validPassword) {
+            const user = { name: 'Election Voter', email };
+            setLoggedInUser(user);
+            localStorage.setItem('election-app-user', JSON.stringify(user));
+          } else {
+            setLoginError('Invalid credentials. Use your registered email or user@example.com / vote1234');
+          }
         }
       }
     } catch {
       setLoginError('Unable to sign in. Please check your connection and credentials.');
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleRegisterSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setLoginError('');
+
+    const { email, password, confirmPassword } = registerForm;
+    if (!email || !password || !confirmPassword) {
+      setLoginError('Please fill in all registration fields.');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setLoginError('Passwords do not match.');
+      return;
+    }
+
+    setAuthLoading(true);
+    try {
+      if (isFirebaseConfigured) {
+        const userCredential = await registerUser(email, password);
+        const user = {
+          name: userCredential.user.displayName || 'Election Voter',
+          email: userCredential.user.email || email,
+        };
+        setLoggedInUser(user);
+        localStorage.setItem('election-app-user', JSON.stringify(user));
+      } else {
+        const accounts = getLocalAccounts();
+        if (accounts.some((account) => account.email.toLowerCase() === email.toLowerCase())) {
+          setLoginError('This email is already registered. Please sign in or use a different email.');
+          return;
+        }
+
+        saveLocalAccount({ email, password });
+        const user = { name: 'Election Voter', email };
+        setLoggedInUser(user);
+        localStorage.setItem('election-app-user', JSON.stringify(user));
+      }
+    } catch {
+      setLoginError('Unable to create account. Please try again later.');
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setLoginError('');
+    setAuthLoading(true);
+
+    try {
+      const userCredential = await signInWithGooglePopup();
+      const user = {
+        name: userCredential.user.displayName || 'Election Voter',
+        email: userCredential.user.email || '',
+      };
+      setLoggedInUser(user);
+      localStorage.setItem('election-app-user', JSON.stringify(user));
+    } catch {
+      setLoginError('Unable to sign in with Google. Please ensure Firebase is configured correctly.');
     } finally {
       setAuthLoading(false);
     }
@@ -100,9 +192,19 @@ function App() {
     if (!loggedInUser) {
       return (
         <LoginCard
+          authMode={authMode}
           loginForm={loginForm}
+          registerForm={registerForm}
           onChange={(field, value) => setLoginForm({ ...loginForm, [field]: value })}
+          onRegisterChange={(field, value) => setRegisterForm({ ...registerForm, [field]: value })}
+          onModeToggle={(mode) => {
+            setAuthMode(mode);
+            setLoginError('');
+          }}
           onSubmit={handleLoginSubmit}
+          onRegisterSubmit={handleRegisterSubmit}
+          onGoogleSignIn={handleGoogleSignIn}
+          firebaseEnabled={isFirebaseConfigured}
           error={loginError}
           loading={authLoading}
         />
@@ -199,30 +301,73 @@ function App() {
 }
 
 interface LoginCardProps {
+  authMode: 'signin' | 'signup';
   loginForm: { email: string; password: string };
+  registerForm: { email: string; password: string; confirmPassword: string };
   onChange: (field: 'email' | 'password', value: string) => void;
+  onRegisterChange: (field: 'email' | 'password' | 'confirmPassword', value: string) => void;
+  onModeToggle: (mode: 'signin' | 'signup') => void;
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
+  onRegisterSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
+  onGoogleSignIn: () => Promise<void>;
   error: string;
   loading: boolean;
+  firebaseEnabled: boolean;
 }
 
-function LoginCard({ loginForm, onChange, onSubmit, error, loading }: LoginCardProps) {
+function LoginCard({
+  authMode,
+  loginForm,
+  registerForm,
+  onChange,
+  onRegisterChange,
+  onModeToggle,
+  onSubmit,
+  onRegisterSubmit,
+  onGoogleSignIn,
+  error,
+  loading,
+  firebaseEnabled,
+}: LoginCardProps) {
   return (
     <div className="login-container">
       <div className="login-card card-base">
         <div className="login-header">
-          <h2>Sign In</h2>
-          <p>Use the sample credentials or Firebase sign-in to access election resources.</p>
+          <h2>{authMode === 'signin' ? 'Sign In' : 'Create Account'}</h2>
+          <p>Use your email and password or Firebase Google sign-in to access election resources.</p>
         </div>
 
-        <form className="login-form" onSubmit={onSubmit}>
+        <div className="auth-mode-toggle">
+          <button
+            type="button"
+            className={authMode === 'signin' ? 'toggle-active' : ''}
+            onClick={() => onModeToggle('signin')}
+            aria-pressed={authMode === 'signin'}
+          >
+            Login
+          </button>
+          <button
+            type="button"
+            className={authMode === 'signup' ? 'toggle-active' : ''}
+            onClick={() => onModeToggle('signup')}
+            aria-pressed={authMode === 'signup'}
+          >
+            Create Account
+          </button>
+        </div>
+
+        <form className="login-form" onSubmit={authMode === 'signin' ? onSubmit : onRegisterSubmit}>
           <label htmlFor="login-email">
             Email address
             <input
               id="login-email"
               type="email"
-              value={loginForm.email}
-              onChange={(e) => onChange('email', e.target.value)}
+              value={authMode === 'signin' ? loginForm.email : registerForm.email}
+              onChange={(e) =>
+                authMode === 'signin'
+                  ? onChange('email', e.target.value)
+                  : onRegisterChange('email', e.target.value)
+              }
               className="form-input"
               placeholder="user@example.com"
               required
@@ -235,14 +380,34 @@ function LoginCard({ loginForm, onChange, onSubmit, error, loading }: LoginCardP
             <input
               id="login-password"
               type="password"
-              value={loginForm.password}
-              onChange={(e) => onChange('password', e.target.value)}
+              value={authMode === 'signin' ? loginForm.password : registerForm.password}
+              onChange={(e) =>
+                authMode === 'signin'
+                  ? onChange('password', e.target.value)
+                  : onRegisterChange('password', e.target.value)
+              }
               className="form-input"
               placeholder="vote1234"
               required
               aria-required="true"
             />
           </label>
+
+          {authMode === 'signup' && (
+            <label htmlFor="login-confirm-password">
+              Confirm Password
+              <input
+                id="login-confirm-password"
+                type="password"
+                value={registerForm.confirmPassword}
+                onChange={(e) => onRegisterChange('confirmPassword', e.target.value)}
+                className="form-input"
+                placeholder="Confirm your password"
+                required
+                aria-required="true"
+              />
+            </label>
+          )}
 
           {error && (
             <div className="login-error" role="alert">
@@ -251,9 +416,25 @@ function LoginCard({ loginForm, onChange, onSubmit, error, loading }: LoginCardP
           )}
 
           <button type="submit" className="login-submit-btn" disabled={loading}>
-            {loading ? 'Signing in...' : 'Sign In'}
+            {loading ? (authMode === 'signin' ? 'Signing in...' : 'Creating account...') : authMode === 'signin' ? 'Sign In' : 'Create Account'}
           </button>
         </form>
+
+        {firebaseEnabled ? (
+          <button
+            type="button"
+            className="google-signin-btn"
+            onClick={onGoogleSignIn}
+            disabled={loading}
+            aria-label="Sign in with Google"
+          >
+            {loading ? 'Signing in...' : 'Sign in with Google'}
+          </button>
+        ) : (
+          <p className="google-disabled-note">
+            Firebase Google sign-in is not configured yet. Use local credentials or set up Firebase.
+          </p>
+        )}
 
         <div className="login-help">
           <p>

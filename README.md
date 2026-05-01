@@ -133,9 +133,18 @@ npm run coverage
 
 1. Copy `.env.example` to `.env`
 2. Add your Firebase project credentials
-3. Restart the development server
+3. Enable Email/Password and Google sign-in in Firebase Authentication
+4. Restart the development server
 
 If Firebase is not configured, the app still supports local login using sample credentials: `user@example.com` / `vote1234`.
+
+### Google Sign-In
+- Once Firebase is configured, use the **Sign in with Google** button on the login page.
+- This enables users to authenticate with their Google account and access the app securely.
+
+### Email / Password Registration
+- Use the **Create Account** mode on the login screen to register with your own email and password.
+- This supports Gmail addresses and other email providers through Firebase Authentication.
 
 ## 📚 Component Documentation
 

@@ -1,22 +1,29 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { getFAQs } from '../utils/electionLogic';
 import { FiChevronDown } from 'react-icons/fi';
 
 const FAQs: React.FC = () => {
-  const faqs = getFAQs();
+  const faqs = useMemo(() => getFAQs(), []);
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
 
-  const categories = ['All', ...Array.from(new Set(faqs.map((faq) => faq.category)))];
+  const categories = useMemo(
+    () => ['All', ...Array.from(new Set(faqs.map((faq) => faq.category)))],
+    [faqs],
+  );
 
-  const filteredFAQs = faqs.filter((faq) => {
-    const matchesSearch =
-      faq.question.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      faq.answer.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = activeCategory === 'All' || faq.category === activeCategory;
-    return matchesSearch && matchesCategory;
-  });
+  const filteredFAQs = useMemo(
+    () =>
+      faqs.filter((faq) => {
+        const matchesSearch =
+          faq.question.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          faq.answer.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesCategory = activeCategory === 'All' || faq.category === activeCategory;
+        return matchesSearch && matchesCategory;
+      }),
+    [faqs, searchTerm, activeCategory],
+  );
 
   return (
     <div className="faq-container">
