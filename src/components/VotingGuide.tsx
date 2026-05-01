@@ -12,12 +12,14 @@ const VotingGuide: React.FC = () => {
         <h2>🗳️ How to Vote - Step by Step</h2>
         <p className="subtitle">Learn the complete voting process on polling day</p>
 
-        <div className="steps-timeline">
+        <div className="steps-timeline" role="tablist" aria-label="Voting steps">
           {steps.map((step, idx) => (
-            <div
+            <button
               key={step.step}
+              type="button"
               className={`timeline-item ${activeStep === idx ? 'active' : ''}`}
               onClick={() => setActiveStep(idx)}
+              aria-pressed={activeStep === idx}
             >
               <div className="timeline-marker">
                 <span className="step-number">{step.step}</span>
@@ -25,7 +27,7 @@ const VotingGuide: React.FC = () => {
               <div className="timeline-content">
                 <h4>{step.title}</h4>
               </div>
-            </div>
+            </button>
           ))}
         </div>
 

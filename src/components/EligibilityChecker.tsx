@@ -17,9 +17,10 @@ const EligibilityChecker: React.FC<EligibilityCheckerProps> = ({ onEligibilityRe
     hasVoterId: false,
   });
   const [result, setResult] = useState<EligibilityResult | null>(null);
+  const [formError, setFormError] = useState('');
 
   const handleAgeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const age = parseInt(e.target.value) || 0;
+    const age = parseInt(e.target.value, 10) || 0;
     setUserData({ ...userData, age });
   };
 
@@ -36,10 +37,12 @@ const EligibilityChecker: React.FC<EligibilityCheckerProps> = ({ onEligibilityRe
   };
 
   const handleCheckEligibility = () => {
-    if (!userData.name || userData.age === 0 || !userData.citizenship) {
-      alert('Please fill all required fields');
+    if (!userData.name || userData.age === 0 || !userData.citizenship || !userData.residenceState) {
+      setFormError('Please complete all required fields before checking eligibility.');
       return;
     }
+
+    setFormError('');
     const eligibilityResult = checkEligibility(userData);
     setResult(eligibilityResult);
     onEligibilityResult(eligibilityResult, userData);
@@ -54,24 +57,29 @@ const EligibilityChecker: React.FC<EligibilityCheckerProps> = ({ onEligibilityRe
         {!result ? (
           <div className="form-section">
             <div className="form-step">
-              <label>Step 1: What's your name?</label>
+              <label htmlFor="eligibility-name">Step 1: What's your name?</label>
               <input
+                id="eligibility-name"
                 type="text"
                 placeholder="Enter your full name"
                 value={userData.name}
                 onChange={handleNameChange}
                 className="form-input"
+                aria-required="true"
               />
             </div>
 
             <div className="form-step">
-              <label>Step 2: How old are you?</label>
+              <label htmlFor="eligibility-age">Step 2: How old are you?</label>
               <input
+                id="eligibility-age"
                 type="number"
                 placeholder="Enter your age"
                 value={userData.age || ''}
                 onChange={handleAgeChange}
                 className="form-input"
+                min={0}
+                aria-required="true"
               />
             </div>
 
@@ -94,17 +102,25 @@ const EligibilityChecker: React.FC<EligibilityCheckerProps> = ({ onEligibilityRe
             </div>
 
             <div className="form-step">
-              <label>Step 4: Which state do you live in?</label>
+              <label htmlFor="eligibility-state">Step 4: Which state do you live in?</label>
               <input
+                id="eligibility-state"
                 type="text"
                 placeholder="Enter your state name"
                 value={userData.residenceState}
                 onChange={handleStateChange}
                 className="form-input"
+                aria-required="true"
               />
             </div>
 
-            <button className="check-btn" onClick={handleCheckEligibility}>
+            {formError && (
+              <div className="form-error" role="alert">
+                {formError}
+              </div>
+            )}
+
+            <button type="button" className="check-btn" onClick={handleCheckEligibility}>
               Check My Eligibility <FiChevronRight />
             </button>
           </div>

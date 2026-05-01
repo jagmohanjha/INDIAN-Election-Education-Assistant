@@ -12,12 +12,14 @@ const RegistrationGuide: React.FC = () => {
         <h2>📋 Voter Registration Guide</h2>
         <p className="subtitle">Follow these simple steps to register as a voter</p>
 
-        <div className="steps-timeline">
+        <div className="steps-timeline" role="tablist" aria-label="Registration steps">
           {steps.map((step, idx) => (
-            <div
+            <button
               key={step.step}
+              type="button"
               className={`timeline-item ${activeStep === idx ? 'active' : ''}`}
               onClick={() => setActiveStep(idx)}
+              aria-pressed={activeStep === idx}
             >
               <div className="timeline-marker">
                 <span className="step-number">{step.step}</span>
@@ -25,7 +27,7 @@ const RegistrationGuide: React.FC = () => {
               <div className="timeline-content">
                 <h4>{step.title}</h4>
               </div>
-            </div>
+            </button>
           ))}
         </div>
 

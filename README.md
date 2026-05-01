@@ -43,11 +43,13 @@ An interactive, educational web application designed to help users (especially f
 
 ## 🛠️ Technology Stack
 
-- **Frontend Framework**: React 18 with TypeScript
+- **Frontend Framework**: React 19 with TypeScript
 - **Build Tool**: Vite 8
 - **Styling**: CSS3 with CSS Variables
 - **Icons**: React Icons (Feather Icons)
-- **UI/UX**: Responsive design with mobile optimization
+- **Testing**: Vitest + Testing Library
+- **Authentication / Google Services**: Firebase Auth (optional configuration)
+- **UI/UX**: Responsive design with mobile optimization and improved accessibility
 
 ## 📦 Project Structure
 
@@ -108,6 +110,32 @@ npm run build
 ```
 
 The optimized build will be created in the `dist/` directory.
+
+### Running Tests
+
+```bash
+npm run test
+```
+
+To run the test runner interactively:
+
+```bash
+npm run test:watch
+```
+
+To generate coverage reports:
+
+```bash
+npm run coverage
+```
+
+## 🔐 Firebase Setup (Optional)
+
+1. Copy `.env.example` to `.env`
+2. Add your Firebase project credentials
+3. Restart the development server
+
+If Firebase is not configured, the app still supports local login using sample credentials: `user@example.com` / `vote1234`.
 
 ## 📚 Component Documentation
 
