@@ -1224,7 +1224,7 @@ textarea:focus-visible {
 
 /* Quiz Component */
 .quiz-container .quiz-card {
-  background: #0e131b;
+  background: #eeeff0;
   border-radius: var(--border-radius);
   padding: 30px;
   box-shadow: var(--shadow-md);
@@ -1247,13 +1247,13 @@ textarea:focus-visible {
 
 .quiz-container .question-counter {
   font-size: 13px;
-  color: #ebeced;
+  color: #022b54;
   font-weight: 600;
   margin-bottom: 20px;
 }
 
 .quiz-container .question-box {
-  background: #aaabaf;
+  background: #dee0ea;
   padding: 30px;
   border-radius: 12px;
   margin-bottom: 30px;
